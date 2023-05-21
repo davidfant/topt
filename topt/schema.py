@@ -10,14 +10,17 @@ __json_schema_type_to_name = {
   'object': 'object',
 }
 
+def snake_to_camel_case(string: str) -> str:
+  return ''.join(word if i == 0 else word.capitalize() for i, word in enumerate(string.split('_')))
 
-def __to_string(obj: Dict, minify: bool) -> str:
+
+def __to_string(obj: Dict, minify: bool, camel_case: bool) -> str:
   title = obj['title']
 
   if obj['type'] == 'object':
     properties: str = []
     for key, value in obj['properties'].items():
-      required = key in obj['required']
+      required = key in obj.get('required', [])
       if '$ref' in value:
         type_name = value['$ref'].split('/')[-1]
       elif value['type'] == 'array':
@@ -28,7 +31,8 @@ def __to_string(obj: Dict, minify: bool) -> str:
       else:
         type_name = __json_schema_type_to_name[value['type']]
       
-      prop = f'{key}: {type_name};' if required else f'{key}?: {type_name};'
+      prop_name = snake_to_camel_case(key) if camel_case else key
+      prop = f'{prop_name}: {type_name};' if required else f'{prop_name}?: {type_name};'
       if 'description' in value or 'default' in value:
         prop += ' /*'
         if 'description' in value:
@@ -51,11 +55,11 @@ def __to_string(obj: Dict, minify: bool) -> str:
     raise Exception(f'Unknown type: {obj["type"]}')
 
 
-def schema(model: Type[BaseModel], minify: bool = False) -> str:
+def schema(model: Type[BaseModel], minify: bool = False, camel_case: bool = False) -> str:
   json_schema = model.schema()
 
   defs: List[Dict] = []
   for definition in json_schema.get('definitions', {}).values():
     defs.append(definition)
   defs.append(json_schema)
-  return '\n'.join([__to_string(d, minify=minify) for d in defs])
+  return '\n'.join([__to_string(d, minify=minify, camel_case=camel_case) for d in defs])
