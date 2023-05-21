@@ -1,1 +1,3 @@
 pydantic
+json5
+yaml

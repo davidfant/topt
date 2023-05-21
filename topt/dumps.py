@@ -1,6 +1,5 @@
 from typing import Dict, Literal
 from pydantic import BaseModel
-import tiktoken
 import json
 import json5
 import yaml
@@ -22,6 +21,11 @@ def dumps(
     data = data.dict()
 
   if format == 'shortest':
+    try:
+      import tiktoken
+    except ImportError as e:
+      raise Exception('Please install tiktoken to use the "shortest" format')
+
     encoder = tiktoken.encoding_for_model(model)
     other_formats = list(__format_to_dumps.keys())
     alternatives = [dumps(data, f) for f in other_formats]

@@ -13,6 +13,8 @@ setup(
   python_requires='>=3.6',
   install_requires=[
     "pydantic",
+    "json5",
+    "yaml",
   ],
   extras_require={
     "test": [
