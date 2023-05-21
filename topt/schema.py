@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union, Tuple, Type
+from typing import Dict, List, Type
 from pydantic import BaseModel
 
 
@@ -55,8 +55,11 @@ def __to_string(obj: Dict, minify: bool, camel_case: bool) -> str:
     raise Exception(f'Unknown type: {obj["type"]}')
 
 
-def schema(model: Type[BaseModel], minify: bool = False, camel_case: bool = False) -> str:
-  json_schema = model.schema()
+def schema(model: Type[BaseModel] | Dict, minify: bool = False, camel_case: bool = False) -> str:
+  if isinstance(model, dict):
+    json_schema = model
+  else:
+    json_schema = model.schema()
 
   defs: List[Dict] = []
   for definition in json_schema.get('definitions', {}).values():

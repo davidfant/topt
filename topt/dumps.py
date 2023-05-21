@@ -1,8 +1,10 @@
 from typing import Dict, Literal
+from pydantic import BaseModel
 import tiktoken
 import json
 import json5
 import yaml
+from .config import config, Format
 
 Format = Literal['json', 'json5', 'yaml', 'shortest']
 __format_to_dumps = {
@@ -11,7 +13,14 @@ __format_to_dumps = {
   'yaml': yaml.dump,
 }
 
-def dumps(data: Dict, format: Format = 'json5', model: str = 'gpt-4') -> str:
+def dumps(
+  data: Dict | BaseModel,
+  format: Format = config.default_dumps_format,
+  model: str = config.default_model,
+) -> str:
+  if isinstance(data, BaseModel):
+    data = data.dict()
+
   if format == 'shortest':
     encoder = tiktoken.encoding_for_model(model)
     other_formats = list(__format_to_dumps.keys())
