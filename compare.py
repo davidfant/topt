@@ -82,12 +82,35 @@ def compare_dumps(enc: Any, verbose: bool = False):
     print(tabulate(data, headers=['Type', 'Chars', 'Tokens']))
 
 
+def compare_params(enc: Any, verbose: bool = False):
+  object = json.loads("""{"products": [{"id": 8281194791208, "title": "Top (Yellow)", "url": "https://shop.com/products/top-yellow", "variants": [{"id": 45154677752104, "title": "S", "available": false}, {"id": 45154677784872, "title": "M", "available": true}, {"id": 45154677817640, "title": "L", "available": true}, {"id": 45154677850408, "title": "XL", "available": true}]}, {"id": 8281196069160, "title": "Top (Red)", "url": "https://shop.com/products/top-red", "variants": [{"id": 45154678112552, "title": "S", "available": true}, {"id": 45154678145320, "title": "M", "available": true}, {"id": 45154678178088, "title": "L", "available": true}, {"id": 45154678210856, "title": "XL", "available": true}]}, {"id": 8281195872552, "title": "Top (Green)", "url": "https://shop.com/products/top-green", "variants": [{"id": 45154677981480, "title": "S", "available": true}, {"id": 45154678014248, "title": "M", "available": true}, {"id": 45154678047016, "title": "L", "available": true}, {"id": 45154678079784, "title": "XL", "available": true}]}]}""")
+
+  prompt = f'Here is an object: {json.dumps(object)}'
+  parameterized_prompt, parameter_mapping = topt.parameterize(prompt, [object])
+
+  data: List[Tuple[str, str]] = [
+    ('original', prompt),
+    ('parameterized', parameterized_prompt),
+  ]
+
+  if verbose:
+    for t, s in data:
+      print('-' * 30)
+      print(t)
+      print('-' * 30)
+      print(s)
+      print()
+  
+  data = [(t, len(s), len(enc.encode(s))) for t, s in data]
+  print(tabulate(data, headers=['Type', 'Chars', 'Tokens']))
+
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument('--model', default='gpt-4')
   parser.add_argument('--verbose', action='store_true')
   # one or more of 'schema', 'dumps'
-  parser.add_argument('--comparisons', nargs='+', choices=['schema', 'dumps'])
+  parser.add_argument('--comparisons', nargs='+', choices=['schema', 'dumps', 'params'])
 
   args = parser.parse_args()
 
@@ -96,6 +119,7 @@ if __name__ == '__main__':
   comparisons = {
     'schema': compare_schema,
     'dumps': compare_dumps,
+    'params': compare_params,
   }
   for comparison in args.comparisons:
     comparisons[comparison](enc, args.verbose)
