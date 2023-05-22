@@ -14,7 +14,7 @@ setup(
   install_requires=[
     "pydantic",
     "json5",
-    "yaml",
+    "pyyaml",
   ],
   extras_require={
     "test": [
