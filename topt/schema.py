@@ -1,4 +1,4 @@
-from typing import Dict, List, Type
+from typing import Dict, List, Type, Tuple, Any
 from pydantic import BaseModel
 
 
@@ -14,22 +14,46 @@ def snake_to_camel_case(string: str) -> str:
   return ''.join(word if i == 0 else word.capitalize() for i, word in enumerate(string.split('_')))
 
 
-def __to_string(obj: Dict, minify: bool, camel_case: bool) -> str:
-  title = obj['title']
+def __flatten(list: List[List[Any]]) -> List[Any]:
+  return [item for sublist in list for item in sublist]
 
-  if obj['type'] == 'object':
+
+def __to_string(
+  obj: Dict,
+  minify: bool,
+  camel_case: bool,
+) -> Tuple[str, List[str]]:
+  title = obj['$ref'].split('/')[-1] if '$ref' in obj else obj['title'].replace(' ', '')
+
+  if '$ref' in obj:
+    return title, []
+  elif 'enum' in obj:
+    values = ' | '.join(obj['enum'])
+    return title, [f'type {title} = {values}']
+  elif 'allOf' in obj:
+    types = [__to_string(v, minify=minify, camel_case=camel_case) for v in obj['allOf']]
+    if len(types) == 1:
+      return types[0]
+    type_names, type_defs = zip(*types)
+    return title, [*__flatten(type_defs), f'type {title} = {" | ".join(type_names)}']
+  elif 'anyOf' in obj:
+    types = [__to_string(v, minify=minify, camel_case=camel_case) for v in obj['allOf']]
+    if len(types) == 1:
+      return types[0]
+    type_names, type_defs = zip(*types)
+    return title, [*__flatten(type_defs), f'type {title} = {" | ".join(type_names)}']
+  elif obj['type'] == 'array':
+    type_name, type_defs = __to_string(obj['items'], minify=minify, camel_case=camel_case)
+    return f'{type_name}[]', type_defs
+  elif obj['type'] == 'object':
+    if not 'properties' in obj:
+      return 'object', []
+
     properties: str = []
+    all_type_defs: List[str] = []
     for key, value in obj['properties'].items():
       required = key in obj.get('required', [])
-      if '$ref' in value:
-        type_name = value['$ref'].split('/')[-1]
-      elif value['type'] == 'array':
-        if '$ref' in value['items']:
-          type_name = f'{value["items"]["$ref"].split("/")[-1]}[]'
-        else:
-          type_name = f'{__json_schema_type_to_name[value["items"]["type"]]}[]'
-      else:
-        type_name = __json_schema_type_to_name[value['type']]
+      type_name, type_defs = __to_string(value, minify=minify, camel_case=camel_case)
       
       prop_name = snake_to_camel_case(key) if camel_case else key
       prop = f'{prop_name}: {type_name};' if required else f'{prop_name}?: {type_name};'
@@ -41,18 +65,18 @@ def __to_string(obj: Dict, minify: bool, camel_case: bool) -> str:
           prop += f' default = {value["default"]}'
         prop += ' */'
       properties.append(prop)
+      all_type_defs.extend(type_defs)
     
     if minify:
       properties = ' '.join(properties)
-      return f'type {title} {{ {properties} }}'
+      all_type_defs.append(f'type {title} {{ {properties} }}')
     else:
       properties = '\n '.join(properties)
-      return f'type {title} {{\n {properties}\n}}'
-  elif 'enum' in obj:
-    values = ' | '.join(obj['enum'])
-    return f'type {title} = {values}'
+      all_type_defs.append(f'type {title} {{\n {properties}\n}}')
+    return title, all_type_defs
   else:
-    raise Exception(f'Unknown type: {obj["type"]}')
+    type_name = __json_schema_type_to_name[obj['type']]
+    return type_name, []
 
 
 def schema(model: Type[BaseModel] | Dict, minify: bool = False, camel_case: bool = False) -> str:
@@ -60,9 +84,15 @@ def schema(model: Type[BaseModel] | Dict, minify: bool = False, camel_case: bool
     json_schema = model
   else:
     json_schema = model.schema()
+  
+  import json
+  print(json.dumps(json_schema, indent=2))
 
-  defs: List[Dict] = []
+  type_defs: List[Dict] = []
   for definition in json_schema.get('definitions', {}).values():
-    defs.append(definition)
-  defs.append(json_schema)
-  return '\n'.join([__to_string(d, minify=minify, camel_case=camel_case) for d in defs])
+    type_defs.append(definition)
+  type_defs.append(json_schema)
+
+  types = [__to_string(d, minify=minify, camel_case=camel_case) for d in type_defs]
+  type_names, type_defs = zip(*types)
+  return '\n'.join(__flatten(type_defs))
