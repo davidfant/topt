@@ -26,7 +26,7 @@ def parameterize(prompt: str, items: List[Dict | List]) -> Tuple[str, ParameterM
     if __is_id_key(key) and isinstance(value, (str, int)):
       if value not in parameter_mapping:
         id_count += 1
-        parameter_mapping[value] = f'$id{id_count}'
+        parameter_mapping[value] = f'$${id_count}'
 
   parameterized_prompt = prompt
   # loop parameters sorted by the longest key
