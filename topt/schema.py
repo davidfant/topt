@@ -31,54 +31,55 @@ def __to_string(
     type_name, type_defs = __to_string(obj['items'], minify=minify, camel_case=camel_case)
     return f'{type_name}[]', type_defs
 
-  title = obj['title'].replace(' ', '')
-  if 'enum' in obj:
-    values = ' | '.join(obj['enum'])
-    return title, [f'type {title} = {values}']
-  elif 'allOf' in obj:
-    types = [__to_string(v, minify=minify, camel_case=camel_case) for v in obj['allOf']]
-    if len(types) == 1:
-      return types[0]
-    type_names, type_defs = zip(*types)
-    return title, [*__flatten(type_defs), f'type {title} = {" | ".join(type_names)}']
-  elif 'anyOf' in obj:
-    types = [__to_string(v, minify=minify, camel_case=camel_case) for v in obj['allOf']]
-    if len(types) == 1:
-      return types[0]
-    type_names, type_defs = zip(*types)
-    return title, [*__flatten(type_defs), f'type {title} = {" | ".join(type_names)}']
-  elif obj['type'] == 'object':
-    if not 'properties' in obj:
-      return 'object', []
+  title = obj['title'].replace(' ', '') if 'title' in obj else None
+  if title:
+    if 'enum' in obj:
+      values = ' | '.join(obj['enum'])
+      return title, [f'type {title} = {values}']
+    elif 'allOf' in obj:
+      types = [__to_string(v, minify=minify, camel_case=camel_case) for v in obj['allOf']]
+      if len(types) == 1:
+        return types[0]
+      type_names, type_defs = zip(*types)
+      return title, [*__flatten(type_defs), f'type {title} = {" | ".join(type_names)}']
+    elif 'anyOf' in obj:
+      types = [__to_string(v, minify=minify, camel_case=camel_case) for v in obj['allOf']]
+      if len(types) == 1:
+        return types[0]
+      type_names, type_defs = zip(*types)
+      return title, [*__flatten(type_defs), f'type {title} = {" | ".join(type_names)}']
+    elif obj['type'] == 'object':
+      if not 'properties' in obj:
+        return 'object', []
 
-    properties: str = []
-    all_type_defs: List[str] = []
-    for key, value in obj['properties'].items():
-      required = key in obj.get('required', [])
-      type_name, type_defs = __to_string(value, minify=minify, camel_case=camel_case)
+      properties: str = []
+      all_type_defs: List[str] = []
+      for key, value in obj['properties'].items():
+        required = key in obj.get('required', [])
+        type_name, type_defs = __to_string(value, minify=minify, camel_case=camel_case)
+        
+        prop_name = snake_to_camel_case(key) if camel_case else key
+        prop = f'{prop_name}: {type_name};' if required else f'{prop_name}?: {type_name};'
+        if 'description' in value or 'default' in value:
+          prop += ' /*'
+          if 'description' in value:
+            prop += f' {value["description"]}'
+          if 'default' in value:
+            prop += f' default = {value["default"]}'
+          prop += ' */'
+        properties.append(prop)
+        all_type_defs.extend(type_defs)
       
-      prop_name = snake_to_camel_case(key) if camel_case else key
-      prop = f'{prop_name}: {type_name};' if required else f'{prop_name}?: {type_name};'
-      if 'description' in value or 'default' in value:
-        prop += ' /*'
-        if 'description' in value:
-          prop += f' {value["description"]}'
-        if 'default' in value:
-          prop += f' default = {value["default"]}'
-        prop += ' */'
-      properties.append(prop)
-      all_type_defs.extend(type_defs)
-    
-    if minify:
-      properties = ' '.join(properties)
-      all_type_defs.append(f'type {title} {{ {properties} }}')
-    else:
-      properties = '\n '.join(properties)
-      all_type_defs.append(f'type {title} {{\n {properties}\n}}')
-    return title, all_type_defs
-  else:
-    type_name = __json_schema_type_to_name[obj['type']]
-    return type_name, []
+      if minify:
+        properties = ' '.join(properties)
+        all_type_defs.append(f'type {title} {{ {properties} }}')
+      else:
+        properties = '\n '.join(properties)
+        all_type_defs.append(f'type {title} {{\n {properties}\n}}')
+      return title, all_type_defs
+
+  type_name = __json_schema_type_to_name[obj['type']]
+  return type_name, []
 
 
 def schema(model: Type[BaseModel] | Dict, minify: bool = False, camel_case: bool = False) -> str:
