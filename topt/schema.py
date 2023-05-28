@@ -23,11 +23,16 @@ def __to_string(
   minify: bool,
   camel_case: bool,
 ) -> Tuple[str, List[str]]:
-  title = obj['$ref'].split('/')[-1] if '$ref' in obj else obj['title'].replace(' ', '')
 
   if '$ref' in obj:
+    title = obj['$ref'].split('/')[-1]
     return title, []
-  elif 'enum' in obj:
+  elif obj['type'] == 'array':
+    type_name, type_defs = __to_string(obj['items'], minify=minify, camel_case=camel_case)
+    return f'{type_name}[]', type_defs
+
+  title = obj['title'].replace(' ', '')
+  if 'enum' in obj:
     values = ' | '.join(obj['enum'])
     return title, [f'type {title} = {values}']
   elif 'allOf' in obj:
@@ -42,9 +47,6 @@ def __to_string(
       return types[0]
     type_names, type_defs = zip(*types)
     return title, [*__flatten(type_defs), f'type {title} = {" | ".join(type_names)}']
-  elif obj['type'] == 'array':
-    type_name, type_defs = __to_string(obj['items'], minify=minify, camel_case=camel_case)
-    return f'{type_name}[]', type_defs
   elif obj['type'] == 'object':
     if not 'properties' in obj:
       return 'object', []
