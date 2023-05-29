@@ -27,7 +27,7 @@ def __to_string(
   if '$ref' in obj:
     title = obj['$ref'].split('/')[-1]
     return title, []
-  elif obj['type'] == 'array':
+  elif obj.get('type') == 'array':
     type_name, type_defs = __to_string(obj['items'], minify=minify, camel_case=camel_case)
     return f'{type_name}[]', type_defs
 
