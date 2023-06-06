@@ -72,10 +72,10 @@ def __to_string(
       
       if minify:
         properties = ' '.join(properties)
-        all_type_defs.append(f'type {title} {{ {properties} }}')
+        all_type_defs.append(f'type {title} = {{ {properties} }}')
       else:
         properties = '\n '.join(properties)
-        all_type_defs.append(f'type {title} {{\n {properties}\n}}')
+        all_type_defs.append(f'type {title} = {{\n {properties}\n}}')
       return title, all_type_defs
 
   type_name = __json_schema_type_to_name[obj['type']]
