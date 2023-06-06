@@ -1,4 +1,4 @@
-from typing import Dict, Literal
+from typing import Dict, List, Literal
 from pydantic import BaseModel
 import json
 import json5
@@ -13,7 +13,7 @@ __format_to_dumps = {
 }
 
 def dumps(
-  data: Dict | BaseModel,
+  data: Dict | List | BaseModel,
   format: Format = config.default_dumps_format,
   model: str = config.default_model,
 ) -> str:

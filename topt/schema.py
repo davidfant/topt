@@ -87,9 +87,6 @@ def schema(model: Type[BaseModel] | Dict, minify: bool = False, camel_case: bool
     json_schema = model
   else:
     json_schema = model.schema()
-  
-  import json
-  print(json.dumps(json_schema, indent=2))
 
   type_defs: List[Dict] = []
   for definition in json_schema.get('definitions', {}).values():
