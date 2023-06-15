@@ -60,10 +60,12 @@ def __to_string(
         
         prop_name = snake_to_camel_case(key) if camel_case else key
         prop = f'{prop_name}: {type_name};' if required else f'{prop_name}?: {type_name};'
-        if 'description' in value or 'default' in value:
+        if 'description' in value or 'default' in value or 'format' in value:
           prop += ' /*'
           if 'description' in value:
             prop += f' {value["description"]}'
+          if 'format' in value:
+            prop += f' format = {value["format"]}'
           if 'default' in value:
             prop += f' default = {value["default"]}'
           prop += ' */'
