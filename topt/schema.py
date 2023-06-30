@@ -48,7 +48,15 @@ def __to_string(
         return types[0]
       type_names, type_defs = zip(*types)
       return title, [*__flatten(type_defs), f'type {title} = {" | ".join(type_names)}']
-    elif obj['type'] == 'object':
+    elif 'oneOf' in obj:
+      types = [__to_string(v, minify=minify, camel_case=camel_case) for v in obj['oneOf']]
+      if len(types) == 1:
+        return types[0]
+      type_names, type_defs = zip(*types)
+      return title, [*__flatten(type_defs), f'type {title} = {" | ".join(type_names)}']
+    elif not 'type' in obj:
+      return 'any', []
+    elif obj.get('type') == 'object':
       if not 'properties' in obj:
         return 'object', []
 
