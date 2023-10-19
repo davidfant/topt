@@ -46,7 +46,7 @@ type TestModel = {
  boolean: bool;
  string: string; /* string description */
  optional?: string;
- dictionary: object;
+ dictionary: Record<string, unknown>;
  defaulted?: int; /* default = 0 */
  snake_case: string;
 }
@@ -63,6 +63,20 @@ type TestModel = {
 type NestedModel = { id: string; }
 type TestModel = { nested: NestedModel; }
 """.strip())
+
+  def test_formats_dict_key_and_value_types(self):
+    class TestModel(BaseModel):
+      int_key: Dict[str, int]
+      combined_key: Dict[str, str | bool]
+    
+    stringified = schema(TestModel, minify=False)
+    self.assertEqual(stringified, """
+type TestModel = {
+ int_key: Record<string, int>;
+ combined_key: Record<string, string | bool>;
+}
+""".strip())
+
 
 if __name__ == '__main__':
   unittest.main()
