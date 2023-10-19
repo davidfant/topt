@@ -9,7 +9,7 @@ Format = Literal['json', 'json5', 'yaml', 'shortest']
 __format_to_dumps = {
   'json': json.dumps,
   'json5': json5.dumps,
-  'yaml': yaml.dump,
+  'yaml': lambda data: yaml.dump(data, sort_keys=False),
 }
 
 def dumps(

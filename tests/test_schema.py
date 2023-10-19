@@ -32,11 +32,11 @@ class TestSchema(unittest.TestCase):
 
     stringified = schema(TestModel, minify=False)
     self.assertEqual(stringified, """
-type NestedModel {
+type NestedModel = {
  id: string;
 }
-type Enum = a | b
-type TestModel {
+type Enum = 'a' | 'b'
+type TestModel = {
  nested: NestedModel;
  nested_with_description: NestedModel; /* description */
  list: NestedModel[];
@@ -60,8 +60,8 @@ type TestModel {
     
     stringified = schema(TestModel, minify=True)
     self.assertEqual(stringified, """
-type NestedModel { id: string; }
-type TestModel { nested: NestedModel; }
+type NestedModel = { id: string; }
+type TestModel = { nested: NestedModel; }
 """.strip())
 
 if __name__ == '__main__':

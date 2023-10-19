@@ -13,7 +13,7 @@ pip install -r requirements.txt
 ## Testing
 
 ```bash
-python3 -m unittest discover -s tests
+python3 -m unittest discover
 ```
 
 ## Compare

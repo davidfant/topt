@@ -1,5 +1,11 @@
 from typing import Dict, List, Type, Tuple, Any
 from pydantic import BaseModel
+import subprocess
+import tempfile
+import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 __json_schema_type_to_name = {
@@ -32,11 +38,14 @@ def __to_string(
     return f'{type_name}[]', type_defs
 
   title = obj['title'].replace(' ', '') if 'title' in obj else None
-  if title:
-    if 'enum' in obj:
-      values = ' | '.join(obj['enum'])
+  if 'enum' in obj:
+    values = ' | '.join([f"'{v}'" for v in obj['enum']])
+    if title:
       return title, [f'type {title} = {values}']
-    elif 'allOf' in obj:
+    else:
+      return values, []
+  if title:
+    if 'allOf' in obj:
       types = [__to_string(v, minify=minify, camel_case=camel_case) for v in obj['allOf']]
       if len(types) == 1:
         return types[0]
@@ -87,6 +96,10 @@ def __to_string(
         properties = '\n '.join(properties)
         all_type_defs.append(f'type {title} = {{\n {properties}\n}}')
       return title, all_type_defs
+  
+  if not 'type' in obj:
+    logger.warning(f'Unknown type: {obj}')
+    return 'unknown', []
 
   type_name = __json_schema_type_to_name[obj['type']]
   return type_name, []
@@ -106,3 +119,20 @@ def schema(model: Type[BaseModel] | Dict, minify: bool = False, camel_case: bool
   types = [__to_string(d, minify=minify, camel_case=camel_case) for d in type_defs]
   type_names, type_defs = zip(*types)
   return '\n'.join(__flatten(type_defs))
+
+  # 1. dump json schema in temporary file
+  # 2. run json2ts
+  # json2ts /private/var/folders/j2/stdvm9c50l109dgfdqv45x400000gn/T/n8n/schema.json --bannerComment ""
+  # 3. for each line starting with "export ", remove "export "
+  # 4. return all lines
+  # with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+  #   json.dump(json_schema, f)
+  #   f.close()
+  #   output = subprocess.check_output(['json2ts', f.name, '--bannerComment', ''])
+  #   lines = output.decode('utf-8').split('\n')
+  #   lines = [line[7:] if line.startswith('export ') else line for line in lines]
+  #   return '\n'.join(lines)
+
+
+
+
