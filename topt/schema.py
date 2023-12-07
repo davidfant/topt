@@ -134,8 +134,8 @@ def schema(model: Type[BaseModel] | Dict, minify: bool = False, camel_case: bool
     json_schema = model.schema()
 
   type_defs: List[Dict] = []
-  for definition in json_schema.get('definitions', {}).values():
-    type_defs.append(definition)
+  for title, definition in json_schema.get('definitions', {}).items():
+    type_defs.append({ **definition, 'title': title })
   type_defs.append(json_schema)
 
   types = [__to_string(d, minify=minify, camel_case=camel_case) for d in type_defs]
