@@ -97,14 +97,17 @@ def __to_string(
       
       prop_name = snake_to_camel_case(key) if camel_case else key
       prop = f'{prop_name}: {type_name};' if required else f'{prop_name}?: {type_name};'
-      if 'description' in value or 'default' in value or 'format' in value:
+      comments = [
+        (None, value['title'] if value.get('title') != type_name else None),
+        (None, value.get('description')),
+        ('format', value.get('format')),
+        ('default', value.get('default')),
+      ]
+      if any([c[1] for c in comments]):
         prop += ' /*'
-        if 'description' in value:
-          prop += f' {value["description"]}'
-        if 'format' in value:
-          prop += f' format = {value["format"]}'
-        if 'default' in value:
-          prop += f' default = {value["default"]}'
+        for k, v in comments:
+          prefix = f'{k} = ' if k else ''
+          if v: prop += f' {prefix}{v}'
         prop += ' */'
       properties.append(prop)
       all_type_defs.extend(type_defs)
