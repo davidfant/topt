@@ -98,7 +98,7 @@ def __to_string(
       prop_name = snake_to_camel_case(key) if camel_case else key
       prop = f'{prop_name}: {type_name};' if required else f'{prop_name}?: {type_name};'
       comments = [
-        (None, value['title'] if value.get('title') != type_name else None),
+        (None, value.get('title') if value.get('title') != type_name else None),
         (None, value.get('description')),
         ('format', value.get('format')),
         ('default', value.get('default')),
