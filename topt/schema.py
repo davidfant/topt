@@ -1,8 +1,6 @@
 from typing import Dict, List, Type, Tuple, Any
 from pydantic import BaseModel
-import subprocess
-import tempfile
-import json
+import re
 import logging
 
 logger = logging.getLogger(__name__)
@@ -96,18 +94,19 @@ def __to_string(
       type_name, type_defs = __to_string(value, minify=minify, camel_case=camel_case)
       
       prop_name = snake_to_camel_case(key) if camel_case else key
+      if not re.match(r'^[A-Za-z0-9_]+$', prop_name):
+        prop_name = f'"{prop_name}"'
       prop = f'{prop_name}: {type_name};' if required else f'{prop_name}?: {type_name};'
       comments = [
-        (None, value.get('title') if value.get('title') != type_name else None),
         (None, value.get('description')),
         ('format', value.get('format')),
         ('default', value.get('default')),
       ]
-      if any([c[1] for c in comments]):
+      if any([c[1] is not None for c in comments]):
         prop += ' /*'
         for k, v in comments:
           prefix = f'{k} = ' if k else ''
-          if v: prop += f' {prefix}{v}'
+          if v is not None: prop += f' {prefix}{v}'
         prop += ' */'
       properties.append(prop)
       all_type_defs.extend(type_defs)

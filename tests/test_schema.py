@@ -76,6 +76,24 @@ type TestModel = {
  combined_key: Record<string, string | bool>;
 }
 """.strip())
+    
+  def test_escapes_dict_keys(self):
+    stringified = schema({
+      'type': 'object',
+      'title': 'TestModel',
+      'properties': {
+        'normal': { 'type': 'string' },
+        'key with space': { 'type': 'string' },
+        'key.with.dot': { 'type': 'string' },
+      },
+    }, minify=False)
+    self.assertEqual(stringified, """
+type TestModel = {
+ normal?: string;
+ "key with space"?: string;
+ "key.with.dot"?: string;
+}
+""".strip())
 
 
 if __name__ == '__main__':
